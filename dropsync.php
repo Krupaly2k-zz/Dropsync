@@ -13,8 +13,8 @@
  * @package           Dropsync
  *
  * @wordpress-plugin
- * Plugin Name:       Dropbox Sync
- * Plugin URI:        http://scopeship.com
+ * Plugin Name:       Dropbox WP Sync
+ * Plugin URI:        https://github.com/Krupaly2k/Dropsync
  * Description:       This is a short description of what the plugin does. It's displayed in the WordPress admin area.
  * Version:           1.0.0
  * Author:            Krupal Lakhia
