@@ -1,2 +1,0 @@
-# Dropsync
-WP- Dropbox Sync

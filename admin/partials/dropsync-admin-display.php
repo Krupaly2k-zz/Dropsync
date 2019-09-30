@@ -1,7 +1,4 @@
-<?php
-require_once(ABSPATH . 'wp-load.php');
-
-ob_start();
+<?php ob_start();
 /**
  * Provide a admin area view for the plugin
  *
@@ -15,12 +12,10 @@ ob_start();
  */
  
  
- 
 ?>
 
 <!-- This file should primarily consist of HTML with a little bit of PHP. -->
 <?php
-
 
 $exampleListTable = new Example_List_Table();
 
@@ -64,39 +59,10 @@ $getopt = get_option('dropsync-options');
 			
 				$metadata = $exampleListTable->dropsync_download($token,$fl,$out_fl);
 				
-				$filepathl = $updl['path'].'/'.$metadata['name'];
-
-//echo $filepathl; exit;
-if (file_exists($filepathl))
-{
-	
-    $upload_id = wp_insert_attachment( array(
-		'guid'           => $filepathl, 
-		'post_mime_type' => mime_content_type($filepathl),
-		'post_title'     => preg_replace( '/\.[^.]+$/', '', $metadata['name'] ),
-		'post_content'   => '',
-		'post_status'    => 'inherit'
-	), $filepathl );
-
-	
-	// wp_generate_attachment_metadata() won't work if you do not include this file
-	require_once( ABSPATH . 'wp-admin/includes/image.php' );
- 
-	// Generate and save the attachment metas into the database
-	wp_update_attachment_metadata( $upload_id, wp_generate_attachment_metadata( $upload_id, $filepathl ) );
-	
-						?>
-						<div class="notice notice-success is-dismissible">
-							<p><?php _e('File has been uploaded to media liberary', 'dropsync'); ?></p>
-						</div>
-					<?php	
-					    }
-
 
 			}
-	
-		}	
-		//echo $exampleListTable->getvars();	
+			}	
+
 if(!empty($reql)){
 	
 	if(isset($_POST['submitf']))
@@ -112,27 +78,24 @@ if(!empty($reql)){
 		
 		if(isset($_FILES)){
 			
-			//$pl = $_FILES['dropsync-upload']['name'];
-			//$pla = $folder_path.'/'.$pl;
 			$uploads = wp_upload_dir();
 			$upload_dir = $uploads['basedir'];
-			//echo wp_upload_dir(); exit;
-			//	$upload_dir = $upload_dir . '/dropsync';
-			$upload_dir = 'dropsync';
-    if (! is_dir($upload_dir)) {
-       mkdir( $upload_dir, 0777 );
+			$upload_dir1 = 'dropsync';
+    if (! is_dir($upload_dir1)) {
+       mkdir( $upload_dir1, 0777 );
     }
-	$path=sanitize_file_name($_FILES['dropsync-upload']['name']);
-    $pathto=$upload_dir.'/'.$path;
-    move_uploaded_file( sanitize_file_name($_FILES['dropsync-upload']['tmp_name']),$pathto) or die( "Could not copy file!");
+	$path=$_FILES['dropsync-upload']['name'];
+    $pathto=$upload_dir.'/'.$upload_dir1.'/'.$path;
+	
+    move_uploaded_file($_FILES['dropsync-upload']['tmp_name'],$pathto) or die( "Could not copy file!");
 
 
 
-		$path_origin = sanitize_file_name($_FILES['dropsync-upload']['name']);  	
+		$path_origin = $_FILES['dropsync-upload']['name'];  	
 
 			
 				
-		$exampleListTable->dropsync_upload($path_origin,$token);
+		$exampleListTable->dropsync_upload($path_origin,$token,$pathto);
 		
 		}
 		
@@ -307,29 +270,6 @@ class Example_List_Table extends WP_List_Table
 		}
 		else{	
 		
-		
-	/*	
-		curl_setopt($ch, CURLOPT_URL, "https://api.dropboxapi.com/2/files/list_folder");
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_CAINFO, "cacert.pem");
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, "{\"path\":\"/".$folder_path."\"}");
-		curl_setopt($ch, CURLOPT_POST, 1);
-
-		$headers = array();
-		
-		
-		$headers[] = "Authorization: Bearer ".$token."";
-		$headers[] = "Content-Type: application/json";
-		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
-		try{
-			$result = curl_exec($ch);
-			} catch (Exception $e) {
-			echo 'Exception : ', $e->getMessage(), "\n";
-			}
-*/
 
 		$json = json_decode($response['body'], true);
 		$i=1;
@@ -380,7 +320,7 @@ class Example_List_Table extends WP_List_Table
 		}
     }
 	
-	function dropsync_upload($pat,$token)
+	function dropsync_upload($pat,$token,$pto)
 	{
 		
 		$getopt = get_option('dropsync-options');
@@ -396,47 +336,42 @@ class Example_List_Table extends WP_List_Table
 			$folder_path = '/';
 		}
 		
-
+		//$ubody = array($folder_path.''.$pat);
 		
-				  $cheaders = array('Authorization: Bearer '.$token.'',
-                  'Content-Type: application/octet-stream',
-                  'Dropbox-API-Arg: {"path":"'.$folder_path.''.$pat.'", "mode":"add"}');
-
-					$fp = fopen('dropsync/'.$pat, 'rb');
-					$size = filesize('dropsync/'.$pat);
-					
-							  
-					$ch = curl_init('https://content.dropboxapi.com/2/files/upload');
-					curl_setopt($ch, CURLOPT_HTTPHEADER, $cheaders);
-					curl_setopt($ch, CURLOPT_PUT, true);
-					curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-					curl_setopt($ch, CURLOPT_INFILE, $fp);
-					curl_setopt($ch, CURLOPT_INFILESIZE, $size);
-					curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-					$response = curl_exec($ch);
-					$err = curl_error($ch);
-
-					curl_close($ch);
-
-					if ($err) {
-						?>
-						<div class="notice notice-error is-dismissible">
-							<p><?php _e($err, 'dropsync'); ?></p>
-						</div>
-						<?php
-					  
-					} else {
-						?>
-						<div class="notice notice-success is-dismissible">
-							<p><?php _e('File has been uploaded successfully', 'dropsync'); ?></p>
-						</div>
-					<?php	
-					}
-
-					
-					curl_close($ch);
-					fclose($fp);
-					unlink('dropsync/'.$pat);
+		$url = 'https://content.dropboxapi.com/2/files/upload';
+		$pathll = $folder_path.''.$pat;
+			$dropapi = array('path'=>$pathll,'mode'=>'add');
+		//$request = new HttpRequest();
+		$response = wp_remote_post($url, 
+							array('method'=>'POST', 
+							'headers' => array('Content-Type' => 'application/octet-stream',
+												'Authorization' => 'Bearer '.$token,
+												'Dropbox-API-Arg' => json_encode($dropapi),
+												
+												),
+							'body'	=>file_get_contents($pto)											
+								)
+							);
+		
+		if ( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();	
+			?>
+				<div class="notice notice-error is-dismissible">
+					<p><?php _e($error_message, 'dropsync'); ?></p>
+				</div>
+			<?php
+    
+    
+		} else {
+				?>
+				<div class="notice notice-success is-dismissible">
+					<p><?php _e('File has been uploaded successfully', 'dropsync'); ?></p>
+				</div>
+				<?php	
+			
+		}
+		
+				unlink($pto);
 		
 	}
 	
@@ -463,52 +398,72 @@ class Example_List_Table extends WP_List_Table
         echo "fopen error; can't open $out_fl\n";
         return (NULL);
         }
+		
 
-    $url = 'https://content.dropboxapi.com/2/files/download';
+	
+		$url = 'https://api.dropboxapi.com/2/files/get_temporary_link';
+		$jsl = array('path' => $fl);
+		//$request = new HttpRequest();
+		$response = wp_remote_post($url, 
+							array('method'=>'POST', 
+							'headers' => array('Content-Type' => 'application/json',							
+												'Authorization' => 'Bearer '.$token
+												),
+									'body' => json_encode($jsl)					
+								)
+							);
+		
+		if ( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();	
+			?>
+				<div class="notice notice-error is-dismissible">
+					<p><?php _e($error_message, 'dropsync'); ?></p>
+				</div>
+			<?php
+    
+    
+		} else {
+				
+			$resl = json_decode($response['body']);
+		
+			$content = file_get_contents($resl->link);
+		
+			file_put_contents($out_fl, $content);
+			
+				$filepathl = $out_fl;
 
-    $header_array = array(
-        'Authorization: Bearer '.$token,
-        'Content-Type:',
-        'Dropbox-API-Arg: {"path":"' . $fl . '"}'
-    );
 
-    $ch = curl_init();
+				if (file_exists($filepathl))
+				{
+					
+					$upload_id = wp_insert_attachment( array(
+						'guid'           => $filepathl, 
+						'post_mime_type' => mime_content_type($filepathl),
+						'post_title'     => preg_replace( '/\.[^.]+$/', '', $resl->metadata->name ),
+						'post_content'   => '',
+						'post_status'    => 'inherit'
+					), $filepathl );
 
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_POST, TRUE);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $header_array);
-    curl_setopt($ch, CURLOPT_FILE, $out_fp);
-
-    $metadata = null;
-    curl_setopt($ch, CURLOPT_HEADERFUNCTION, function ($ch, $header) use (&$metadata)
-        {
-        $prefix = 'dropbox-api-result:';
-        if (strtolower(substr($header, 0, strlen($prefix))) === $prefix)
-            {
-            $metadata = json_decode(substr($header, strlen($prefix)), true);
-            }
-        return strlen($header);
-        }
-    );
-
-    $output = curl_exec($ch);
-
-    if ($output === FALSE)
-        {
-        echo "curl error: " . curl_error($ch);
-        }
-
-    curl_close($ch);
-    fclose($out_fp);
-    return($metadata);
-
+					
+					// wp_generate_attachment_metadata() won't work if you do not include this file
+					require_once( ABSPATH . 'wp-admin/includes/image.php' );
+				 
+					// Generate and save the attachment metas into the database
+					wp_update_attachment_metadata( $upload_id, wp_generate_attachment_metadata( $upload_id, $filepathl ) );
+	
+						?>
+						<div class="notice notice-success is-dismissible">
+							<p><?php _e('File has been uploaded to media liberary', 'dropsync'); ?></p>
+						</div>
+					<?php	
+					    }
+			
+		}
 		
 	}
 	
-	
 	function dropsync_delete($pat,$token)
 	{
-		
 	
 		$getopt = get_option('dropsync-options');
 		$token = $getopt['dropsync-token'];
@@ -525,7 +480,6 @@ class Example_List_Table extends WP_List_Table
 		
 				$dbody = array('path'=>''.$pat.'');
 		$url = 'https://api.dropboxapi.com/2/files/delete_v2';
-		//$request = new HttpRequest();
 		$response = wp_remote_post($url, 
 							array('method'=>'POST', 
 							'headers' => array('Content-Type' => 'application/json',
@@ -552,92 +506,14 @@ class Example_List_Table extends WP_List_Table
 			
 		}
 		
-		/*		  $cheaders = array('Authorization: Bearer '.$token.'',
-                  'Content-Type: application/json');
-
-							  
-					$ch = curl_init('https://api.dropboxapi.com/2/files/delete_v2');
-					
-					curl_setopt($ch, CURLOPT_HTTPHEADER, $cheaders);
-					//curl_setopt($ch, CURLOPT_PUT, true);
-					curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-					curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-					curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-					curl_setopt($ch, CURLOPT_ENCODING, "");
-					curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-					curl_setopt($ch, CURLOPT_POSTFIELDS, "{\"path\": \"$pat\"}");
-					$response = curl_exec($ch);
-					$err = curl_error($ch);
-
-					curl_close($ch);
-
-					if ($err) {
-						?>
-						<div class="notice notice-error is-dismissible">
-							<p><?php _e($err, 'dropsync'); ?></p>
-						</div>
-						<?php
-					  
-					} else {
-						?>
-						<div class="notice notice-success is-dismissible">
-							<p><?php _e('File has been deleted', 'dropsync'); ?></p>
-						</div>
-					<?php	
-					}
-					//fclose($fp);
-					//unlink('dropsync/'.$pat);
-					*/
-		
 	}
-	
-	
 	
 	function dropsync_createfolder($pat,$token)
 	{
 		
-		
-	
-				  		  $cheaders = array('Authorization: Bearer '.$token.'',
-                  'Content-Type: application/json');
-
-			//		$fp = fopen('dropsync/'.$pat, 'rb');
-			//		$size = filesize('dropsync/'.$pat);
-					
-							  
-		/*			$ch = curl_init('https://api.dropboxapi.com/2/files/create_folder_v2');
-					curl_setopt($ch, CURLOPT_HTTPHEADER, $cheaders);
-					curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-					curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-					curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
-					curl_setopt($ch, CURLOPT_ENCODING, "");
-					curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-					curl_setopt($ch, CURLOPT_POSTFIELDS, "{\"path\": \"$pat\"}");
-					
-					$response = curl_exec($ch);
-					$err = curl_error($ch);
-
-					curl_close($ch);
-
-					if ($err) {
-						?>
-						<div class="notice notice-error is-dismissible">
-							<p><?php _e($err, 'dropsync'); ?></p>
-						</div>
-						<?php
-					  
-					} else {
-						?>
-						<div class="notice notice-success is-dismissible">
-							<p><?php _e('New folder has been created', 'dropsync'); ?></p>
-						</div>
-					<?php	
-					}
-		*/
 		$cbody = array('path'=>''.$pat.'');
 		$url = 'https://api.dropboxapi.com/2/files/create_folder_v2';
-		//$request = new HttpRequest();
-		$response = wp_remote_post($url, 
+			$response = wp_remote_post($url, 
 							array('method'=>'POST', 
 							'headers' => array('Content-Type' => 'application/json',
 												'Authorization' => 'Bearer '.$token),
@@ -663,7 +539,6 @@ class Example_List_Table extends WP_List_Table
 			
 		}
 	}
-	
 	
 	 function formatSizeUnits($bytes)
     {
@@ -762,37 +637,9 @@ class Example_List_Table extends WP_List_Table
 
 	}
 	
-/*	function dropsync_add_query_vars_filter( $vars ){
-		$vars[] = "la";
-		return $vars;
-	} */
-	
-	
-	
 	function get_bulk_actions() {
-	 /* $actions = array(
-		'delete'    => 'Delete'
-	  );
-	  return $actions; */
+	
 	}
 	
-	/*public function process_bulk_action() {
-
-      $action = $this->current_action();
-        if( 'activate'===$action ) {
-
-          foreach($_GET['wp_list_event'] as $event) {
-                echo($event['title']);
-            }
-
-        }
-        if( 'deactivate'===$action ) {
-          wp_die('Items deactivated (or they would be if we had items to deactivate)!');
-        }
-        //Detect when a bulk action is being triggered...
-        if( 'delete'===$action ) {
-          wp_die('Items deleted (or they would be if we had items to delete)!');
-        }
-    } */
 	
 }	
